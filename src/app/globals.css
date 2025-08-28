@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --ksu-black: #000000;
+  --ksu-gold: #FFC72C;
+  --ksu-gold-hover: #E6B325;
 }
 
 @theme inline {
@@ -22,5 +25,37 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* KSU Custom Styles */
+.ksu-gradient {
+  background: linear-gradient(135deg, var(--ksu-black) 0%, #333333 100%);
+}
+
+.ksu-gold-gradient {
+  background: linear-gradient(135deg, var(--ksu-gold) 0%, var(--ksu-gold-hover) 100%);
+}
+
+.ksu-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ksu-gold);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ksu-gold-hover);
 }
