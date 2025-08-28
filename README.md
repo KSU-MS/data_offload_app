@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# MCAP Data Recovery System
 
-## Getting Started
+Web application for recovering MCAP files using the MCAP CLI tool.
 
-First, run the development server:
+## Quick Start
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   pip install mcap-cli
+   ```
+
+2. **Create `.env.local`**
+   ```bash
+   BASE_DIR=/path/to/your/mcap/files
+   SCRIPT_PATH=/path/to/your/mcap_recover.sh
+   ```
+
+3. **Make script executable**
+   ```bash
+   chmod +x /path/to/your/mcap_recover.sh
+   ```
+
+4. **Run development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open** [http://localhost:3000](http://localhost:3000)
+
+## Production
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How It Works
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+1. User selects MCAP files from web interface
+2. Files are copied to temporary workspace
+3. `mcap_recover.sh` script processes files
+4. Recovered files are zipped and downloaded
+5. Temporary workspace is cleaned up
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Troubleshooting
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **"Recovery script failed"**: Check `mcap-cli` installation and script permissions
+- **"No .mcap files found"**: Verify `BASE_DIR` path and file existence
+- **"Permission denied"**: Ensure script has execute permissions (`chmod +x`)
