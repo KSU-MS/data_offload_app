@@ -3,7 +3,7 @@ import path from "path";
 import { NextResponse } from "next/server";
 
 // Base directory from env or fallback
-const BASE_DIR = process.env.BASE_DIR || "/home/pettrus/mcap_files";
+const BASE_DIR = process.env.BASE_DIR || "/home/nixos/recordings";
 
 export async function GET() {
   try {

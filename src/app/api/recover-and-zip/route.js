@@ -10,8 +10,8 @@ import { spawn } from "child_process";
 import NodeZip from "node-zip"; // npm i node-zip
 
 // --- Config (set in .env.local for real usage) ---
-const BASE_DIR = process.env.BASE_DIR || "/home/pettrus/mcap_files"; // absolute
-const SCRIPT_PATH = process.env.SCRIPT_PATH || "/home/pettrus/mcap_files/mcap_recover.sh"; // absolute
+const BASE_DIR = process.env.BASE_DIR || "/home/nixos/recordings"; // absolute
+const SCRIPT_PATH = process.env.SCRIPT_PATH || "/home/nixos/recordings/mcap_recover.sh"; // absolute
 const TMP_ROOT = process.env.TMP_DIR || os.tmpdir();
 
 const MAX_FILES = Number(process.env.MAX_FILES || 200);
