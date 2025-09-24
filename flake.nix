@@ -37,16 +37,8 @@
         installPhase = ''
           runHook preInstall
         
-          mkdir -p $out/app
-          cp -r .next node_modules public package.json package-lock.json $out/app/
-        
-          mkdir -p $out/bin
-          cat > $out/bin/${name} <<EOF
-          #!${pkgs.bash}/bin/bash
-          cd $out/app
-          exec ${pkgs.nodejs}/bin/npm start -- "\$@"
-          EOF
-          chmod +x $out/bin/${name}
+          mkdir -p $out
+          cp -r ./* ./.* $out/
         
           runHook postInstall
         '';
