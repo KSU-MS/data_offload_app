@@ -6,21 +6,9 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }: 
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, flake-utils }:
     let
-      pkgs = import nixpkgs { inherit system; };
-
-      name = "data_offload_app"; 
-
-      devTools = { system, pkgs }: [
-        pkgs.mcap-cli
-        pkgs.nodejs
-      ];
-
-      devShell = pkgs.mkShell { 
-        buildInputs = (devTools { system = system; pkgs = pkgs; });
-      };
+      name = "data_offload_app";
 
       app = { name, pkgs, system, ... }: pkgs.buildNpmPackage {
         pname = name;
@@ -36,22 +24,43 @@
 
         installPhase = ''
           runHook preInstall
-        
+
           mkdir -p $out
           cp -r ./* ./.* $out/
-        
+
           runHook postInstall
         '';
       };
 
-    in {
-      devShells.default = devShell; 
+      overlay = final: prev: {
+        ${name} = app {
+          name = name;
+          pkgs = final;
+          system = final.system;
+        };
+      };
+    in
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system overlay; };
 
-      packages.default = app {
+        devTools = [
+          pkgs.mcap-cli
+          pkgs.nodejs
+          pkgs.dash
+        ];
+      in {
+        devShells.default = pkgs.mkShell {
+          buildInputs = devTools;
+        };
+
+        packages.default = app {
           name = name;
           pkgs = pkgs;
           system = system;
-      };
-    }
-  ); 
+        };
+      }
+    ) // {
+      overlays.default = overlay;
+    };
 }
