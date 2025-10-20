@@ -12,9 +12,12 @@ services:
       - SCRIPT_PATH=/recordings/mcap_recover.sh
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=1024
     volumes:
       # Replace /home/youruser/mcap_logs with your Linux host path
-      - /home/youruser/mcap_logs:/recordings/logs:ro
+      - /home/pettrus/Downloads/test_mcap_folder:/recordings/logs:ro
       # Recovery script from repo
       - ./mcap_recover:/recordings/mcap_recover.sh:ro
+      # Mount host mcap binary (adjust path as needed)
+      - /usr/local/bin/mcap:/usr/local/bin/mcap:ro
     restart: unless-stopped

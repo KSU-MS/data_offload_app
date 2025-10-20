@@ -26,6 +26,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Pi-optimized settings
+ENV NODE_OPTIONS="--max-old-space-size=1024 --max-semi-space-size=64"
 RUN apk add --no-cache libc6-compat
 # Next.js output for next start
 # Copy the standalone server output and static assets
@@ -42,6 +44,3 @@ ENV SCRIPT_PATH=/recordings/mcap_recover.sh
 
 # Run the compiled Next.js server
 CMD ["node", "server.js"]
-
-
-

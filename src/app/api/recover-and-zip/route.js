@@ -7,7 +7,7 @@ import path from "path";
 import os from "os";
 import { randomUUID } from "crypto";
 import { spawn } from "child_process";
-import NodeZip from "node-zip"; // npm i node-zip
+import archiver from "archiver";
 
 // --- Config (set in .env.local for real usage) ---
 const BASE_DIR = process.env.BASE_DIR || "/home/nixos/recordings"; // absolute
@@ -35,23 +35,13 @@ function resolveInside(base, rel = ".") {
   return abs;
 }
 
-async function stageSelected(absDir, fileNames, inputDir) {
-  let total = 0;
-  for (const name of fileNames) {
-    const src = resolveInside(absDir, name);
-    const st = await fsp.stat(src);
-    if (!st.isFile()) throw new Error(`Not a file: ${name}`);
-    total += st.size;
-    const dest = path.join(inputDir, path.basename(name));
-    await fsp.copyFile(src, dest);
-  }
-  return total;
-}
 
-function runScriptOnce(onDir, { cwd }) {
+function runScriptOnce(onDir, selectedFiles, { cwd }) {
   return new Promise((resolve, reject) => {
     // Invoke via 'sh' so the mounted script need not be executable on host
-    const child = spawn("sh", [SCRIPT_PATH, onDir], {
+    // Pass directory and selected filenames as arguments
+    const args = [SCRIPT_PATH, onDir, ...selectedFiles];
+    const child = spawn("sh", args, {
       cwd,
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
@@ -94,85 +84,160 @@ export async function POST(request) {
     return json(400, { error: `Too many files selected (max ${MAX_FILES})` });
   }
 
-  // Prepare temp workspace
+  // Create simple temp workspace
   const jobId = randomUUID();
   const workRoot = path.join(TMP_ROOT, `recoverjob-${jobId}`);
-  const inputDir = path.join(workRoot, "input");
 
   try {
-    await fsp.mkdir(inputDir, { recursive: true });
-  } catch {
-    return json(500, { error: "Failed to prepare temp workspace" });
-  }
-
-  // Stage selected files from BASE_DIR into temp/input
-  try {
-    const total = await stageSelected(
-      resolveInside(BASE_DIR, "."),
-      files,
-      inputDir
-    );
-    if (total > MAX_TOTAL_BYTES) {
+    await fsp.mkdir(workRoot, { recursive: true });
+    
+    // Copy selected files directly to temp directory
+    let totalSize = 0;
+    for (const fileName of files) {
+      const srcPath = path.join(BASE_DIR, fileName);
+      const dstPath = path.join(workRoot, fileName);
+      
+      const stats = await fsp.stat(srcPath);
+      if (!stats.isFile()) {
+        throw new Error(`Not a file: ${fileName}`);
+      }
+      
+      totalSize += stats.size;
+      await fsp.copyFile(srcPath, dstPath);
+    }
+    
+    if (totalSize > MAX_TOTAL_BYTES) {
       await fsp.rm(workRoot, { recursive: true, force: true });
       return json(400, {
-        error: `Selection too large (>${(MAX_TOTAL_BYTES / 1024 ** 3).toFixed(
-          1
-        )} GB)`,
+        error: `Selection too large (>${(MAX_TOTAL_BYTES / 1024 ** 3).toFixed(1)} GB)`,
       });
     }
   } catch (e) {
     await fsp.rm(workRoot, { recursive: true, force: true });
-    return json(400, { error: e.message || "Failed to stage selected files" });
+    return json(400, { error: e.message || "Failed to copy selected files" });
   }
 
-  // Run the bash recovery script ON THE TEMP INPUT DIRECTORY
+  // Run the recovery script on the temp directory with selected files
   try {
-    await runScriptOnce(inputDir, { cwd: workRoot });
+    await runScriptOnce(workRoot, files, { cwd: workRoot });
+    
+    // Add a small delay to ensure all files are written
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Verify files exist after recovery
+    const postRecoveryEntries = await fsp.readdir(workRoot, { withFileTypes: true });
+    const recoveredFiles = postRecoveryEntries
+      .filter((e) => e.isFile() && e.name.endsWith("-rec.mcap"))
+      .map((e) => e.name);
+    
+    console.log(`Recovery completed. Found ${recoveredFiles.length} recovered files:`, recoveredFiles);
   } catch (e) {
     await fsp.rm(workRoot, { recursive: true, force: true });
     return json(500, { error: "Recovery script failed", details: e.message });
   }
 
-  // Build ZIP in-memory with node-zip (reads all files into memory)
-  // NOTE: node-zip is not streaming; for very large sets consider a streaming lib.
+  // Build ZIP using streaming archiver (memory efficient)
   try {
-    const entries = await fsp.readdir(inputDir, { withFileTypes: true });
-    const recovered = entries
-      .filter((e) => e.isFile() && e.name.endsWith(".mcap"))
-      .map((e) => e.name);
+    const entries = await fsp.readdir(workRoot, { withFileTypes: true });
+    
+    // Only zip the files that were actually created by the recovery script
+    // These are the files that correspond to the user's selected files
+    const recoveredFiles = [];
+    
+    for (const fileName of files) {
+      // For each selected file, find its corresponding recovered version
+      const baseName = fileName.replace(/\.mcap$/, ''); // Remove .mcap extension
+      const recoveredName = `${baseName}-rec.mcap`;
+      
+      // Check if the recovered file exists
+      const recoveredPath = path.join(workRoot, recoveredName);
+      try {
+        const stats = await fsp.stat(recoveredPath);
+        if (stats.isFile()) {
+          recoveredFiles.push(recoveredName);
+          console.log(`Found recovered file: ${recoveredName} (${stats.size} bytes)`);
+        } else {
+          console.error(`Recovered file is not a file: ${recoveredName}`);
+        }
+      } catch (err) {
+        console.error(`Recovered file not found: ${recoveredName}`, err);
+      }
+    }
 
-    if (recovered.length === 0) {
+    if (recoveredFiles.length === 0) {
       await fsp.rm(workRoot, { recursive: true, force: true });
       return json(400, { error: "No recovered .mcap files were produced" });
     }
 
-    const zip = new NodeZip();
-    for (const name of recovered) {
-      const abs = path.join(inputDir, name);
-      const data = await fsp.readFile(abs); // Buffer
-      // node-zip expects string/binary; pass binary string + { binary: true }
-      zip.file(name, data.toString("binary"), {
-        binary: true,
-        compression: "DEFLATE",
-      });
-    }
+    console.log(`Zipping ${recoveredFiles.length} recovered files:`, recoveredFiles);
 
-    const zipBinary = zip.generate({ base64: false, compression: "DEFLATE" });
-    const zipBuffer = Buffer.from(zipBinary, "binary");
+    // Use streaming approach for large files to avoid memory issues
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS format
+    const zipFileName = `recovered_${dateStr}_${timeStr}_${recoveredFiles.length}files.zip`;
+    
+    // Create streaming ZIP response
+    const stream = new ReadableStream({
+      start(controller) {
+        const archive = archiver('zip', { zlib: { level: 1 } }); // Lower compression for speed
+        
+        archive.on('error', (err) => {
+          console.error('Archive error:', err);
+          controller.error(err);
+        });
 
-    // Cleanup before sending (to be safe even if client disconnects later)
-    await fsp.rm(workRoot, { recursive: true, force: true });
+        archive.on('end', () => {
+          console.log('Archive finalized successfully');
+          controller.close();
+        });
 
-    const headers = new Headers();
-    headers.set("Content-Type", "application/zip");
-    headers.set(
-      "Content-Disposition",
-      `attachment; filename="recovered_${new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")}.zip"`
-    );
+        archive.on('data', (chunk) => {
+          controller.enqueue(chunk);
+        });
 
-    return new Response(zipBuffer, { headers });
+        // Add files to archive
+        (async () => {
+          try {
+            for (const fileName of recoveredFiles) {
+              const filePath = path.join(workRoot, fileName);
+              try {
+                const stats = await fsp.stat(filePath);
+                if (stats.isFile()) {
+                  archive.file(filePath, { name: fileName });
+                  console.log(`Added to archive: ${fileName} (${stats.size} bytes)`);
+                } else {
+                  throw new Error(`Not a file: ${fileName}`);
+                }
+              } catch (fileErr) {
+                console.error(`File error: ${filePath}`, fileErr);
+                controller.error(new Error(`File error: ${fileName}`));
+                return;
+              }
+            }
+            
+            // Finalize the archive
+            await archive.finalize();
+          } catch (err) {
+            console.error('Archive creation error:', err);
+            controller.error(err);
+          }
+        })();
+      }
+    });
+
+    // Cleanup after response is sent
+    setTimeout(async () => {
+      await fsp.rm(workRoot, { recursive: true, force: true }).catch(() => {});
+    }, 10000); // Increased delay for large files
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${zipFileName}"`
+        // Don't set Content-Length for streaming responses
+      }
+    });
   } catch (e) {
     // Best-effort cleanup
     await fsp.rm(workRoot, { recursive: true, force: true }).catch(() => {});

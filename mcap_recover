@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Check if the user has provided a directory as an argument
-if [ -z "$1" ]; then
-  echo "Usage: $0 /path/to/directory"
+# Check if we have at least a directory and one file
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 /path/to/directory file1.mcap [file2.mcap ...]"
   exit 1
 fi
 
 # Use the first argument as the directory path
 DIRECTORY="$1"
+shift  # Remove directory from arguments, leaving only filenames
 
 # Check if the directory exists
 if [ ! -d "$DIRECTORY" ]; then
@@ -15,26 +16,29 @@ if [ ! -d "$DIRECTORY" ]; then
   exit 1
 fi
 
-# Loop through each .mcap file in the specified directory
-for file in "$DIRECTORY"/*.mcap; do
+echo "Starting recovery process in directory: $DIRECTORY"
+echo "Processing selected files: $@"
+
+# Process each selected file
+for filename in "$@"; do
+  file="$DIRECTORY/$filename"
   if [ -f "$file" ]; then
     # Extract the file name without the extension and append -rec
     base_name="${file%.mcap}-rec.mcap"
     
-    # Echo the modified file name
-    echo "Processing file: $base_name"
+    echo "Processing file: $file -> $base_name"
 
-    # Replace this with the actual command you want to run on each .mcap file
-    mcap recover "$file" -o "$base_name"
-  fi
-done
-
-for file in "$DIRECTORY"/*.mcap; do
-  if [ -f "$file" ]; then
-    # Check if the file does NOT end with -rec.mcap
-    if [[ ! "$file" =~ -rec\.mcap$ ]]; then
-      echo "Removing file: $file"
-      rm "$file"
+    # Run mcap recover command
+    if mcap recover "$file" -o "$base_name"; then
+      echo "Successfully recovered: $base_name"
+    else
+      echo "Failed to recover: $file"
+      exit 1
     fi
+  else
+    echo "Error: File $file does not exist."
+    exit 1
   fi
 done
+
+echo "Recovery process completed successfully"

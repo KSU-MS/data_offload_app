@@ -2,7 +2,9 @@
 
 Web application for recovering MCAP files from the car and using a shell script that invokes the MCAP CLI to recover the mcap.
 
-## Docker Deployment (Linux)
+## Docker Deployment (Linux/Raspberry Pi)
+
+**Optimized for Raspberry Pi with 2GB RAM**
 
 1. Set the host path to your unrecovered `.mcap` files in `docker-compose.yml`:
    ```yaml
@@ -21,7 +23,17 @@ Web application for recovering MCAP files from the car and using a shell script 
 3. Open the app:
    ```
    http://localhost:3000
+   # Or on Pi: http://<pi-ip>:3000
    ```
+
+**Prerequisites:**
+- MCAP CLI must be installed on the host system (e.g., `/usr/local/bin/mcap`)
+- Docker will mount the host's `mcap` binary into the container
+
+**Pi Memory Optimization:**
+- Node.js memory limit set to 1GB (suitable for 2GB Pi)
+- Streaming ZIP creation (memory efficient)
+- Optimized garbage collection settings
 
 ## Usage
 
@@ -47,6 +59,8 @@ To change the in-container path, update both the `environment` values and the `v
 
 ## Troubleshooting
 
-- No files visible: verify your host path on the left side of the volume mapping contains `.mcap` files and is readable.
-- Script errors: ensure `./mcap_recover` exists in the project. The API runs it via `sh`, so it does not require the executable bit on the host.
-- Different host path: update the left side of the volume mapping to your desired folder, for example `/data/logs:/recordings:ro`.
+- **No files visible**: verify your host path on the left side of the volume mapping contains `.mcap` files and is readable.
+- **Script errors**: ensure `./mcap_recover` exists in the project. The API runs it via `sh`, so it does not require the executable bit on the host.
+- **Memory errors on Pi**: the app uses streaming ZIP creation and 1GB Node.js memory limit optimized for 2GB Pi RAM.
+- **Different host path**: update the left side of the volume mapping to your desired folder, for example `/data/logs:/recordings:ro`.
+- **Pi performance**: for better performance, consider using a Pi 4 with 4GB+ RAM or limit file selection to smaller batches.
