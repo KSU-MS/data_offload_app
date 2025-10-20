@@ -50,7 +50,8 @@ async function stageSelected(absDir, fileNames, inputDir) {
 
 function runScriptOnce(onDir, { cwd }) {
   return new Promise((resolve, reject) => {
-    const child = spawn(SCRIPT_PATH, [onDir], {
+    // Invoke via 'sh' so the mounted script need not be executable on host
+    const child = spawn("sh", [SCRIPT_PATH, onDir], {
       cwd,
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"],

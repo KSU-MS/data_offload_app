@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: data-offload-app:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - BASE_DIR=/recordings
+      - SCRIPT_PATH=/recordings/mcap_recover.sh
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_ENV=production
+    volumes:
+      # Replace /home/youruser/mcap_logs with your Linux host path
+      - /home/youruser/mcap_logs:/recordings:ro
+      # Recovery script from repo
+      - ./mcap_recover:/recordings/mcap_recover.sh:ro
+    restart: unless-stopped

@@ -1,50 +1,52 @@
 # MCAP Data Recovery System
 
-Web application for recovering MCAP files using the MCAP CLI tool.
+Web application for recovering MCAP files from the car and using a shell script that invokes the MCAP CLI to recover the mcap.
 
-## Quick Start
+## Docker Deployment (Linux)
 
-1. **Install dependencies**
+1. Set the host path to your unrecovered `.mcap` files in `docker-compose.yml`:
+   ```yaml
+   volumes:
+     - /home/youruser/mcap_logs:/recordings:ro
+     - ./mcap_recover:/recordings/mcap_recover.sh:ro
+   ```
+   - Replace `/home/youruser/mcap_logs` with the folder on your Linux host containing unrecovered `.mcap` files.
+   - Inside the container the app reads from `/recordings` and runs the script at `/recordings/mcap_recover.sh`.
+
+2. Build and run:
    ```bash
-   npm install
-   pip install mcap-cli
+   docker compose up -d --build
    ```
 
-2. **Create `.env.local`**
-   ```bash
-   BASE_DIR=/path/to/your/mcap/files
-   SCRIPT_PATH=/path/to/your/mcap_recover.sh
+3. Open the app:
+   ```
+   http://localhost:3000
    ```
 
-3. **Make script executable**
-   ```bash
-   chmod +x /path/to/your/mcap_recover.sh
-   ```
+## Usage
 
-4. **Run development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open** [http://localhost:3000](http://localhost:3000)
-
-## Production
-
-```bash
-npm run build
-npm start
-```
+1. Connect to the car's Wi‑Fi access point.
+2. Open a browser to the car's IP on port 3000 (e.g., `http://<car-ip>:3000`).
+3. Select the unrecovered `.mcap` files you need from the list and start recovery.
 
 ## How It Works
 
-1. User selects MCAP files from web interface
-2. Files are copied to temporary workspace
-3. `mcap_recover.sh` script processes files
-4. Recovered files are zipped and downloaded
-5. Temporary workspace is cleaned up
+- The API reads file listings from `BASE_DIR` (set to `/recordings`).
+- Selected files are copied into a temporary workspace inside the container.
+- The recovery script is invoked via `sh /recordings/mcap_recover.sh <temp_dir>`.
+- Recovered files are zipped and returned for download.
+- The temporary workspace is removed after completion.
+
+## Configuration
+
+Environment variables (already set in `docker-compose.yml`):
+- `BASE_DIR=/recordings` (do not change unless you also change the volume target)
+- `SCRIPT_PATH=/recordings/mcap_recover.sh`
+
+To change the in-container path, update both the `environment` values and the `volumes` target so they match.
 
 ## Troubleshooting
 
-- **"Recovery script failed"**: Check `mcap-cli` installation and script permissions
-- **"No .mcap files found"**: Verify `BASE_DIR` path and file existence
-- **"Permission denied"**: Ensure script has execute permissions (`chmod +x`)
+- No files visible: verify your host path on the left side of the volume mapping contains `.mcap` files and is readable.
+- Script errors: ensure `./mcap_recover` exists in the project. The API runs it via `sh`, so it does not require the executable bit on the host.
+- Different host path: update the left side of the volume mapping to your desired folder, for example `/data/logs:/recordings:ro`.
