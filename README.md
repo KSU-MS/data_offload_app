@@ -39,7 +39,7 @@ Web application for recovering MCAP files from the car and using a shell script 
 
 1. Connect to the car's Wi‑Fi access point.
 2. Open a browser to the car's IP on port 3000 (e.g., `http://<car-ip>:3000`).
-3. Select the unrecovered `.mcap` files you need from the list and start recovery.
+3. Select the Files you need to download from car.
 
 ## How It Works
 
