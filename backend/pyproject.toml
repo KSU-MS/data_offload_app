@@ -1,0 +1,15 @@
+[project]
+name = "data-offload-backend"
+version = "0.1.0"
+description = "Django backend for MCAP data offload"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django",
+    "django-cors-headers",
+    "djangorestframework",
+]
+
+[tool.uv]
+dev-dependencies = []
+
