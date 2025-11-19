@@ -238,6 +238,9 @@ export default function HomePage() {
             </p>
           )}
         </div>
+        <div className="text-center mt-6 text-gray-500 text-sm">
+          Created by <a href="https://github.com/pkonnoth" target="_blank" rel="noopener noreferrer" className="text-yellow-600 hover:text-yellow-700 underline decoration-dotted font-medium">pkonnoth</a>
+        </div>
       </div>
     </main>
   );
