@@ -58,7 +58,6 @@ ALLOWED_HOSTS = ["*"]
 
 import os
 RECORDINGS_BASE_DIR = os.environ.get("BASE_DIR", "/recordings")
-RECOVERY_SCRIPT_PATH = os.environ.get("SCRIPT_PATH", "/recordings/mcap_recover.sh")
 
 
 ROOT_URLCONF = 'config.urls'
