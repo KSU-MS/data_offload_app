@@ -1,27 +1,7 @@
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: [
-    {
-      path: "../fonts/Geist.woff2",
-      weight: "400",
-      style: "normal",
-    },
-  ],
-  variable: "--font-geist",
-});
-
-const geistMono = localFont({
-  src: [
-    {
-      path: "../fonts/GeistMono.woff2",
-      weight: "400",
-      style: "normal",
-    },
-  ],
-  variable: "--font-geist-mono",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Data Offload App",
@@ -31,9 +11,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${inter.className} antialiased`}>
         {children}
       </body>
     </html>
