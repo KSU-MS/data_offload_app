@@ -35,7 +35,8 @@ def list_files(request):
                     "modifiedAt": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                 })
     except Exception as e:
-         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error listing files: {e}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response({
         "dir": str(base_dir),

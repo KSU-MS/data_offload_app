@@ -57,7 +57,8 @@ CORS_ALLOW_ALL_ORIGINS = True # For dev simplicity; in prod, restrict to Next.js
 ALLOWED_HOSTS = ["*"]
 
 import os
-RECORDINGS_BASE_DIR = os.environ.get("BASE_DIR", "/recordings")
+RECORDINGS_BASE_DIR = os.environ.get("BASE_DIR", "/Users/pettruskonnoth/Downloads/logs")
+print(f"DEBUG: RECORDINGS_BASE_DIR is set to: {RECORDINGS_BASE_DIR}")
 
 
 ROOT_URLCONF = 'config.urls'
