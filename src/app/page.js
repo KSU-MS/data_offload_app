@@ -30,12 +30,14 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const disableDownload = loading || selected.size === 0;
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   // Load file list on mount
   useEffect(() => {
     async function loadFiles() {
       setError("");
       try {
-        const res = await fetch("/api/files");
+        const res = await fetch(`${API_URL}/api/files/`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch files");
         setFiles(data.files || []);
@@ -70,7 +72,7 @@ export default function HomePage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/recover-and-zip", {
+      const res = await fetch(`${API_URL}/api/recover-and-zip/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Server uses BASE_DIR, so we only send names

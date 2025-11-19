@@ -40,3 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 result
+
+# Backend
+backend/.venv
+backend/.next
+backend/db.sqlite3
+backend/__pycache__
+backend/uv.lock
+**/*.pyc
+
